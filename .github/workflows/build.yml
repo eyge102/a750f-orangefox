@@ -162,15 +162,15 @@ jobs:
         if-no-files-found: error
 
     - name: Create GitHub Release
-      if: github.event.inputs.CREATE_RELEASE == 'true' || startsWith(github.ref, 'refs/tags/')
+      if: github.event.inputs.CREATE_RELEASE == 'true' || startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: ${{ github.ref_name }}
-        name: OrangeFox Recovery for Galaxy A7 2018 (${{ github.ref_name }})
+        tag_name: vR9.0-1
+        name: OrangeFox Recovery for Galaxy A7 2018 (vR9.0-1)
         body: |
           ### OrangeFox Recovery Project for Samsung Galaxy A7 2018 (SM-A750F / a7y18lte)
           - Maintainer: @eyge102
           - Base: OrangeFox R9.0 (Omni 9.0)
           - Built with GitHub Actions CI
-          - Includes root ADB shell patch, Magiskboot v24+, MTP ConfigFS fix, and Odin flashable tar package.
+          - Features: MTP ConfigFS fix, Flashlight support, Boot splash support, Root ADB shell patch, Magiskboot v24+, and Odin flashable tar package.
         files: output/*
