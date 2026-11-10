@@ -32,16 +32,6 @@ Compiled artifacts (recovery image, Odin tar package, and flashable zip) will be
 
 ---
 
-## Credits
-
-- OrangeFox Recovery Project
-- TeamWin Recovery Project
-- Samsung Electronics
-- AKSharma87
-- SebaUbuntu
-- eyge102 (Maintainer)
-
----
 
 ## License
 
