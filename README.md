@@ -19,19 +19,6 @@ An unofficial build of OrangeFox Recovery Project for the Samsung Galaxy A7 2018
 
 ---
 
-## Features
-
-- Material Design UI with customizable color accents and themes
-- Flashlight support
-- Boot splash logo customization support
-- Built-in file manager, terminal and text editor
-- Magisk and Magiskboot integration
-- Full partition backup and restore (System, Vendor, Boot, Recovery, EFS, Data, Cache)
-- MTP, ADB, USB-OTG and SD card support
-- Password, PIN and pattern protection
-
----
-
 ## Building From Source
 
 This project compiles automatically via GitHub Actions CI.
