@@ -100,6 +100,7 @@ TW_MAX_BRIGHTNESS := 255
 TW_DEFAULT_BRIGHTNESS := 128
 TW_USE_NEW_MINADBD := true
 TW_HAS_MTP := true
+TW_MTP_DEVICE := "/dev/mtp_usb"
 TW_EXCLUDE_DEFAULT_USB_INIT := true
 
 # OrangeFox Configuration
@@ -127,10 +128,8 @@ FOX_USE_TAR_BINARY := 1
 FOX_USE_SED_BINARY := 1
 FOX_USE_XZ_UTILS := 1
 OF_FLASHLIGHT_ENABLE := 1
-OF_FL_PATH1 := /sys/class/leds/leds-sec1
-OF_FL_PATH2 := /sys/class/leds/leds-sec2
+OF_FL_PATH1 := /flashlight
 OF_USE_GREEN_LED := 0
 FOX_DELETE_AROMAFM := 1
 OF_ENABLE_LPTOOLS := 1
-TW_USE_CONFIGFS := true
 
