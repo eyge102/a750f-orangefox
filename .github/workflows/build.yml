@@ -1,0 +1,248 @@
+name: Build OrangeFox Recovery for Galaxy A7 2018 (a7y18lte)
+
+on:
+  workflow_dispatch:
+    inputs:
+      CREATE_RELEASE:
+        description: 'Publish as GitHub Release'
+        required: false
+        type: boolean
+        default: true
+  push:
+    branches: [ main, master ]
+    tags:
+      - 'v*'
+    paths-ignore:
+      - 'README.md'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build OrangeFox Recovery
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Free Disk Space
+      run: |
+        sudo apt-get clean
+        sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/boost /opt/hostedtoolcache
+        df -h
+
+    - name: Set Swap Space
+      uses: pierotofy/set-swap-space@master
+      with:
+        swap-size-gb: 12
+
+    - name: Setup Java 8
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '8'
+
+    - name: Install Build Dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y bc bison build-essential ccache curl flex g++-multilib \
+          gcc-multilib git gnupg gperf imagemagick lib32ncurses5-dev lib32readline-dev \
+          lib32z1-dev liblz4-tool libncurses5 libncurses5-dev libsdl1.2-dev libssl-dev \
+          libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc \
+          zip zlib1g-dev python2 python2-minimal
+        sudo update-alternatives --install /usr/bin/python python /usr/bin/python2 1 || true
+        git config --global user.name "eyge102"
+        git config --global user.email "180117909+eyge102@users.noreply.github.com"
+
+    - name: Install Repo Tool
+      run: |
+        mkdir -p ~/bin
+        curl -s https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+        chmod a+x ~/bin/repo
+
+    - name: Initialize TWRP Omni Manifest
+      run: |
+        export PATH=~/bin:$PATH
+        mkdir -p ~/fox
+        cd ~/fox
+        repo init -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_omni.git -b twrp-9.0 --depth=1
+        repo sync -c -j$(nproc) --force-sync --no-clone-bundle --no-tags
+
+    - name: Install OrangeFox Recovery, Theme and Vendor Sources
+      run: |
+        cd ~/fox
+        rm -rf bootable/recovery
+        git clone https://gitlab.com/OrangeFox/bootable/recovery.git -b fox_9.0 bootable/recovery --depth=1
+        rm -rf bootable/recovery/gui/theme
+        git clone https://gitlab.com/OrangeFox/misc/theme.git bootable/recovery/gui/theme --depth=1
+        mkdir -p vendor
+        rm -rf vendor/recovery
+        git clone https://gitlab.com/OrangeFox/vendor/recovery.git -b legacy vendor/recovery --depth=1
+
+    - name: Clone Device Tree
+      run: |
+        cd ~/fox
+        git clone https://github.com/AKSharma87/TWRP_device_samsung_a7y18lte.git -b wip device/samsung/a7y18lte
+
+    - name: Configure Device Tree for OrangeFox & Root ADB
+      run: |
+        cd ~/fox/device/samsung/a7y18lte
+
+        # 1. Fix USB config: remove forced uid=2000,gid=2000 so adbd runs as root
+        sed -i 's/mount functionfs adb \/dev\/usb-ffs\/adb uid=2000,gid=2000/mount functionfs adb \/dev\/usb-ffs\/adb/' recovery/root/init.recovery.usb.rc
+        sed -i 's/ uid=2000,gid=2000//' recovery/root/init.recovery.usb.rc
+
+        # 2. Permissive script
+        echo -e '#!/sbin/sh\necho 0 > /sys/fs/selinux/enforce\nsetenforce 0\n' > recovery/root/permissive.sh
+
+        # 3. OrangeFox Configuration Flags in BoardConfig.mk
+        cat << 'EOF' >> BoardConfig.mk
+        OF_MAINTAINER := eyge102
+        OF_SCREEN_H := 2220
+        OF_STATUS_H := 80
+        OF_STATUS_INDENT_LEFT := 48
+        OF_STATUS_INDENT_RIGHT := 48
+        OF_HIDE_NOTCH := 1
+        OF_CLOCK_POS := 1
+        OF_ALLOW_DISABLE_NAVBAR := 0
+        OF_CHECK_OVERWRITE_ATTEMPTS := 1
+        FOX_USE_TWRP_RECOVERY_IMAGE_BUILDER := 1
+        FOX_REPLACE_TOOLBOX_GETPROP := 1
+        OF_USE_MAGISKBOOT := 1
+        OF_USE_MAGISKBOOT_FOR_ALL_PATCHES := 1
+        OF_USE_NEW_MAGISKBOOT := 1
+        OF_DONT_PATCH_ENCRYPTED_DEVICE := 1
+        OF_NO_TREBLE_COMPATIBILITY_CHECK := 1
+        OF_NO_MIUI_PATCHES := 1
+        OF_NO_SPLASH_CHANGE := 1
+        FOX_USE_BASH_SHELL := 1
+        FOX_ASH_IS_BASH := 1
+        FOX_USE_NANO_EDITOR := 1
+        FOX_USE_TAR_BINARY := 1
+        FOX_USE_SED_BINARY := 1
+        FOX_USE_XZ_UTILS := 1
+        OF_FLASHLIGHT_ENABLE := 0
+        FOX_DELETE_AROMAFM := 1
+        OF_ENABLE_LPTOOLS := 1
+        EOF
+        sed -i 's/^        //' BoardConfig.mk
+
+        # 4. OrangeFox Environment Variables in vendorsetup.sh
+        cat << 'EOF' >> vendorsetup.sh
+        export OF_MAINTAINER="eyge102"
+        export OF_SCREEN_H=2220
+        export OF_STATUS_H=80
+        export OF_STATUS_INDENT_LEFT=48
+        export OF_STATUS_INDENT_RIGHT=48
+        export OF_HIDE_NOTCH=1
+        export OF_CLOCK_POS=1
+        export OF_ALLOW_DISABLE_NAVBAR=0
+        export OF_CHECK_OVERWRITE_ATTEMPTS=1
+        export FOX_USE_TWRP_RECOVERY_IMAGE_BUILDER=1
+        export FOX_REPLACE_TOOLBOX_GETPROP=1
+        export OF_USE_MAGISKBOOT=1
+        export OF_USE_MAGISKBOOT_FOR_ALL_PATCHES=1
+        export OF_USE_NEW_MAGISKBOOT=1
+        export OF_DONT_PATCH_ENCRYPTED_DEVICE=1
+        export OF_NO_TREBLE_COMPATIBILITY_CHECK=1
+        export OF_NO_MIUI_PATCHES=1
+        export OF_NO_SPLASH_CHANGE=1
+        export FOX_USE_BASH_SHELL=1
+        export FOX_ASH_IS_BASH=1
+        export FOX_USE_NANO_EDITOR=1
+        export FOX_USE_TAR_BINARY=1
+        export FOX_USE_SED_BINARY=1
+        export FOX_USE_XZ_UTILS=1
+        export OF_FLASHLIGHT_ENABLE=0
+        export FOX_DELETE_AROMAFM=1
+        export OF_ENABLE_LPTOOLS=1
+        EOF
+        sed -i 's/^        //' vendorsetup.sh
+
+    - name: Compile OrangeFox
+      run: |
+        export PATH=~/bin:$PATH
+        export ALLOW_MISSING_DEPENDENCIES=true
+        export FOX_USE_TWRP_RECOVERY_IMAGE_BUILDER=1
+        export LC_ALL="C"
+        export OF_MAINTAINER="eyge102"
+        export OF_SCREEN_H=2220
+        export OF_STATUS_H=80
+        export OF_STATUS_INDENT_LEFT=48
+        export OF_STATUS_INDENT_RIGHT=48
+        export OF_HIDE_NOTCH=1
+        export OF_CLOCK_POS=1
+        export OF_ALLOW_DISABLE_NAVBAR=0
+        export OF_CHECK_OVERWRITE_ATTEMPTS=1
+        export FOX_REPLACE_TOOLBOX_GETPROP=1
+        export OF_USE_MAGISKBOOT=1
+        export OF_USE_MAGISKBOOT_FOR_ALL_PATCHES=1
+        export OF_USE_NEW_MAGISKBOOT=1
+        export OF_DONT_PATCH_ENCRYPTED_DEVICE=1
+        export OF_NO_TREBLE_COMPATIBILITY_CHECK=1
+        export OF_NO_MIUI_PATCHES=1
+        export OF_NO_SPLASH_CHANGE=1
+        export FOX_USE_BASH_SHELL=1
+        export FOX_ASH_IS_BASH=1
+        export FOX_USE_NANO_EDITOR=1
+        export FOX_USE_TAR_BINARY=1
+        export FOX_USE_SED_BINARY=1
+        export FOX_USE_XZ_UTILS=1
+        export OF_FLASHLIGHT_ENABLE=0
+        export FOX_DELETE_AROMAFM=1
+        export OF_ENABLE_LPTOOLS=1
+        cd ~/fox
+        source build/envsetup.sh
+        lunch omni_a7y18lte-eng
+        make recoveryimage -j$(nproc)
+
+    - name: Patch kernel (disable Samsung SEC_RESTRICT_FORK adbd->uid2000 downgrade)
+      run: |
+        python3 - <<'PY'
+        import glob, re
+        files = glob.glob("/home/runner/fox/out/target/product/a7y18lte/recovery.img")
+        for p in files:
+            d = bytearray(open(p, "rb").read())
+            hits = [m.start() for m in re.finditer(re.escape(b"\x00/sbin/adbd\x00"), d)]
+            print("hits in", p, hits)
+            if len(hits) == 1:
+                d[hits[0] + 1:hits[0] + 12] = b"/sbin/adbX\x00"
+                open(p, "wb").write(d)
+                print("Kernel patched successfully!")
+            else:
+                print("Could not find single /sbin/adbd in kernel (hits:", len(hits), ")")
+        PY
+
+    - name: Prepare Artifacts & Tar Package
+      run: |
+        mkdir -p $GITHUB_WORKSPACE/output
+        find /home/runner/fox/out/target/product/a7y18lte -name "OrangeFox-*.zip" -exec cp {} $GITHUB_WORKSPACE/output/ \; || true
+        find /home/runner/fox/out/target/product/a7y18lte -name "recovery.img" -exec cp {} $GITHUB_WORKSPACE/output/ \; || true
+        cd $GITHUB_WORKSPACE/output
+        if [ -f recovery.img ]; then
+          tar -cvf OrangeFox-a7y18lte-Odin.tar recovery.img
+        fi
+        ls -lh $GITHUB_WORKSPACE/output/
+
+    - name: Upload Recovery Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: OrangeFox-A750F-Recovery
+        path: output/*
+        if-no-files-found: error
+
+    - name: Create GitHub Release
+      if: github.event.inputs.CREATE_RELEASE == 'true' || startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ github.ref_name }}
+        name: OrangeFox Recovery for Galaxy A7 2018 (${{ github.ref_name }})
+        body: |
+          ### OrangeFox Recovery Project for Samsung Galaxy A7 2018 (SM-A750F / a7y18lte)
+          - Maintainer: @eyge102
+          - Base: OrangeFox R9.0 (Omni 9.0)
+          - Built with GitHub Actions CI
+          - Includes root ADB shell patch, Magiskboot v24+, and Odin flashable tar package.
+        files: output/*
