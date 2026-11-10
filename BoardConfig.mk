@@ -100,7 +100,7 @@ TW_MAX_BRIGHTNESS := 255
 TW_DEFAULT_BRIGHTNESS := 128
 TW_USE_NEW_MINADBD := true
 TW_HAS_MTP := true
-TW_MTP_DEVICE := "/dev/mtp_usb"
+TW_MTP_DEVICE := "/dev/usb-ffs/mtp"
 TW_EXCLUDE_DEFAULT_USB_INIT := true
 
 # OrangeFox Configuration

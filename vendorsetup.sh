@@ -39,5 +39,5 @@ export OF_USE_GREEN_LED=0
 export FOX_DELETE_AROMAFM=1
 export OF_ENABLE_LPTOOLS=1
 export TW_HAS_MTP=true
-export TW_MTP_DEVICE="/dev/mtp_usb"
+export TW_MTP_DEVICE="/dev/usb-ffs/mtp"
 export TW_EXCLUDE_DEFAULT_USB_INIT=true
