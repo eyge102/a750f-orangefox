@@ -18,6 +18,8 @@ on boot
     write /sys/kernel/config/usb_gadget/g1/strings/0x409/product ${ro.product.model}
     write /sys/kernel/config/usb_gadget/g1/configs/b.1/strings/0x409/configuration "Conf 1"
     write /sys/kernel/config/usb_gadget/g1/configs/b.1/MaxPower 0x3f
+    symlink /sys/kernel/config/usb_gadget/g1/functions/ffs.mtp /sys/kernel/config/usb_gadget/g1/configs/b.1/ffs.mtp
+    symlink /sys/kernel/config/usb_gadget/g1/functions/ffs.adb /sys/kernel/config/usb_gadget/g1/configs/b.1/ffs.adb
     setprop sys.usb.configfs 1
 
     # Hardware torch bridge
@@ -30,20 +32,12 @@ on boot
 on property:sys.usb.config=none
     write /sys/class/android_usb/android0/enable 0
     write /sys/kernel/config/usb_gadget/g1/UDC "none"
-    stop adbd
-    rm /sys/kernel/config/usb_gadget/g1/configs/b.1/ffs.mtp
-    rm /sys/kernel/config/usb_gadget/g1/configs/b.1/ffs.adb
     setprop sys.usb.state ${sys.usb.config}
 
 on property:sys.usb.config=mtp,adb
     write /sys/class/android_usb/android0/enable 0
-    write /sys/kernel/config/usb_gadget/g1/UDC "none"
-    rm /sys/kernel/config/usb_gadget/g1/configs/b.1/ffs.mtp
-    rm /sys/kernel/config/usb_gadget/g1/configs/b.1/ffs.adb
     write /sys/kernel/config/usb_gadget/g1/idVendor 0x04E8
     write /sys/kernel/config/usb_gadget/g1/idProduct 0x6860
-    symlink /sys/kernel/config/usb_gadget/g1/functions/ffs.mtp /sys/kernel/config/usb_gadget/g1/configs/b.1/ffs.mtp
-    symlink /sys/kernel/config/usb_gadget/g1/functions/ffs.adb /sys/kernel/config/usb_gadget/g1/configs/b.1/ffs.adb
     write /sys/class/android_usb/android0/functions ${sys.usb.config}
     write /sys/kernel/config/usb_gadget/g1/bDeviceClass 0
     write /sys/kernel/config/usb_gadget/g1/UDC "13600000.dwc3"
@@ -53,12 +47,8 @@ on property:sys.usb.config=mtp,adb
 
 on property:sys.usb.config=adb
     write /sys/class/android_usb/android0/enable 0
-    write /sys/kernel/config/usb_gadget/g1/UDC "none"
-    rm /sys/kernel/config/usb_gadget/g1/configs/b.1/ffs.mtp
-    rm /sys/kernel/config/usb_gadget/g1/configs/b.1/ffs.adb
     write /sys/kernel/config/usb_gadget/g1/idVendor 0x04E8
     write /sys/kernel/config/usb_gadget/g1/idProduct 0x6860
-    symlink /sys/kernel/config/usb_gadget/g1/functions/ffs.adb /sys/kernel/config/usb_gadget/g1/configs/b.1/ffs.adb
     write /sys/class/android_usb/android0/functions ${sys.usb.config}
     write /sys/kernel/config/usb_gadget/g1/bDeviceClass 0
     write /sys/kernel/config/usb_gadget/g1/UDC "13600000.dwc3"
@@ -68,12 +58,8 @@ on property:sys.usb.config=adb
 
 on property:sys.usb.config=sideload
     write /sys/class/android_usb/android0/enable 0
-    write /sys/kernel/config/usb_gadget/g1/UDC "none"
-    rm /sys/kernel/config/usb_gadget/g1/configs/b.1/ffs.mtp
-    rm /sys/kernel/config/usb_gadget/g1/configs/b.1/ffs.adb
     write /sys/kernel/config/usb_gadget/g1/idVendor 0x04E8
     write /sys/kernel/config/usb_gadget/g1/idProduct 0x6860
-    symlink /sys/kernel/config/usb_gadget/g1/functions/ffs.adb /sys/kernel/config/usb_gadget/g1/configs/b.1/ffs.adb
     write /sys/class/android_usb/android0/functions adb
     write /sys/kernel/config/usb_gadget/g1/bDeviceClass 0
     write /sys/kernel/config/usb_gadget/g1/UDC "13600000.dwc3"
@@ -82,12 +68,8 @@ on property:sys.usb.config=sideload
 
 on property:sys.usb.config=sideload,adb
     write /sys/class/android_usb/android0/enable 0
-    write /sys/kernel/config/usb_gadget/g1/UDC "none"
-    rm /sys/kernel/config/usb_gadget/g1/configs/b.1/ffs.mtp
-    rm /sys/kernel/config/usb_gadget/g1/configs/b.1/ffs.adb
     write /sys/kernel/config/usb_gadget/g1/idVendor 0x04E8
     write /sys/kernel/config/usb_gadget/g1/idProduct 0x6860
-    symlink /sys/kernel/config/usb_gadget/g1/functions/ffs.adb /sys/kernel/config/usb_gadget/g1/configs/b.1/ffs.adb
     write /sys/class/android_usb/android0/functions adb
     write /sys/kernel/config/usb_gadget/g1/bDeviceClass 0
     write /sys/kernel/config/usb_gadget/g1/UDC "13600000.dwc3"
@@ -96,12 +78,8 @@ on property:sys.usb.config=sideload,adb
 
 on property:sys.usb.config=mtp
     write /sys/class/android_usb/android0/enable 0
-    write /sys/kernel/config/usb_gadget/g1/UDC "none"
-    rm /sys/kernel/config/usb_gadget/g1/configs/b.1/ffs.mtp
-    rm /sys/kernel/config/usb_gadget/g1/configs/b.1/ffs.adb
     write /sys/kernel/config/usb_gadget/g1/idVendor 0x04E8
     write /sys/kernel/config/usb_gadget/g1/idProduct 0x6860
-    symlink /sys/kernel/config/usb_gadget/g1/functions/ffs.mtp /sys/kernel/config/usb_gadget/g1/configs/b.1/ffs.mtp
     write /sys/class/android_usb/android0/functions ${sys.usb.config}
     write /sys/kernel/config/usb_gadget/g1/bDeviceClass 0
     write /sys/kernel/config/usb_gadget/g1/UDC "13600000.dwc3"
