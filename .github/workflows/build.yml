@@ -9,9 +9,7 @@ on:
         type: boolean
         default: true
   push:
-    branches: [ main, master ]
-    tags:
-      - 'v*'
+    branches: [ main ]
     paths-ignore:
       - 'README.md'
 
@@ -116,7 +114,7 @@ jobs:
         export FOX_USE_SED_BINARY=1
         export FOX_USE_XZ_UTILS=1
         export OF_FLASHLIGHT_ENABLE=1
-        export OF_FL_PATH1="/sys/class/camera/flash/rear_torch_flash"
+        export OF_FL_PATH1="/sys/class/leds/leds-sec1"
         export OF_USE_GREEN_LED=0
         export FOX_DELETE_AROMAFM=1
         export OF_ENABLE_LPTOOLS=1
