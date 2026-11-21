@@ -5,15 +5,10 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-add_lunch_combo twrp_a7y18lte-user
-add_lunch_combo twrp_a7y18lte-userdebug
-add_lunch_combo twrp_a7y18lte-eng
-add_lunch_combo omni_a7y18lte-user
-add_lunch_combo omni_a7y18lte-userdebug
-add_lunch_combo omni_a7y18lte-eng
-
 # OrangeFox Configuration
 export FOX_BUILD_DEVICE="a7y18lte"
+export FOX_SAMSUNG_DEVICE=1
+export OF_USE_LEGACY_BATTERY_SERVICES=1
 export FOX_RECOVERY_INSTALL_PARTITION="/dev/block/platform/13500000.dwmmc0/by-name/RECOVERY"
 export FOX_RECOVERY_SYSTEM_PARTITION="/dev/block/platform/13500000.dwmmc0/by-name/SYSTEM"
 export FOX_RECOVERY_VENDOR_PARTITION="/dev/block/platform/13500000.dwmmc0/by-name/VENDOR"

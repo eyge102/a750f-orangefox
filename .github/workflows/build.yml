@@ -138,6 +138,8 @@ jobs:
         export ALLOW_MISSING_DEPENDENCIES=true
         export LC_ALL="C"
         export FOX_BUILD_DEVICE="a7y18lte"
+        export FOX_SAMSUNG_DEVICE=1
+        export OF_USE_LEGACY_BATTERY_SERVICES=1
         export FOX_RECOVERY_INSTALL_PARTITION="/dev/block/platform/13500000.dwmmc0/by-name/RECOVERY"
         export FOX_RECOVERY_SYSTEM_PARTITION="/dev/block/platform/13500000.dwmmc0/by-name/SYSTEM"
         export FOX_RECOVERY_VENDOR_PARTITION="/dev/block/platform/13500000.dwmmc0/by-name/VENDOR"
@@ -175,8 +177,13 @@ jobs:
         export TW_MTP_DEVICE="/dev/usb-ffs/mtp"
         export TW_EXCLUDE_DEFAULT_USB_INIT=true
         cd /home/runner/fox
+        # orangefox_envsetup returns non-zero when frameworks/base/.../vts/Android.mk is absent in minimal manifest
+        set +e
         source build/envsetup.sh
         lunch twrp_a7y18lte-eng
+        LUNCH_RET=$?
+        set -e
+        [ "$LUNCH_RET" -eq 0 ] || { echo "lunch failed with exit code $LUNCH_RET"; exit "$LUNCH_RET"; }
         mka adbd recoveryimage -j$(nproc)
 
     - name: Prepare Artifacts & Tar Package
