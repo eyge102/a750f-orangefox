@@ -45,7 +45,7 @@ jobs:
     - name: Install Build Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y bc bison build-essential ccache cpio curl flex g++-multilib \
+        sudo apt-get install -y bc bison binutils-aarch64-linux-gnu build-essential ccache cpio curl flex g++-multilib \
           gcc-multilib git git-lfs gnupg gperf imagemagick lib32ncurses5-dev lib32readline-dev \
           lib32z1-dev liblz4-tool libncurses5 libncurses5-dev libsdl1.2-dev libssl-dev \
           libxml2 libxml2-utils lz4 lzop pngcrush python-is-python3 python2 python2-minimal \
@@ -171,8 +171,8 @@ jobs:
         export OF_FL_PATH1="/flashlight"
         export OF_USE_GREEN_LED=0
         export FOX_DELETE_AROMAFM=1
-        export OF_ENABLE_LPTOOLS=1
         export OF_USE_LZMA_COMPRESSION=1
+        export FOX_LOCAL_CALLBACK_SCRIPT="/home/runner/fox/device/samsung/a7y18lte/fox_local_callback.sh"
         export TW_HAS_MTP=true
         export TW_MTP_DEVICE="/dev/usb-ffs/mtp"
         export TW_EXCLUDE_DEFAULT_USB_INIT=true
