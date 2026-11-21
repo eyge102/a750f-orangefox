@@ -36,6 +36,14 @@ jobs:
       with:
         swap-size-gb: 12
 
+    - name: Cache ccache
+      uses: actions/cache@v4
+      with:
+        path: /home/runner/.ccache
+        key: ccache-fox12-${{ runner.os }}-${{ github.sha }}
+        restore-keys: |
+          ccache-fox12-${{ runner.os }}-
+
     - name: Setup Java 11
       uses: actions/setup-java@v4
       with:
@@ -137,6 +145,11 @@ jobs:
         export PATH=~/bin:$PATH
         export ALLOW_MISSING_DEPENDENCIES=true
         export LC_ALL="C"
+        export USE_CCACHE=1
+        export CCACHE_EXEC=/usr/bin/ccache
+        export CCACHE_DIR=/home/runner/.ccache
+        mkdir -p "$CCACHE_DIR"
+        ccache -M 5G
         export FOX_BUILD_DEVICE="a7y18lte"
         export FOX_SAMSUNG_DEVICE=1
         export OF_USE_LEGACY_BATTERY_SERVICES=1
