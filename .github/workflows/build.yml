@@ -7,7 +7,7 @@ on:
         description: 'Publish as GitHub Release'
         required: false
         type: boolean
-        default: true
+        default: false
   push:
     branches: [ main ]
     paths-ignore:
@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   build:
-    name: Build OrangeFox Recovery
+    name: Build OrangeFox Recovery (R12)
     runs-on: ubuntu-22.04
 
     steps:
@@ -28,7 +28,7 @@ jobs:
     - name: Free Disk Space
       run: |
         sudo apt-get clean
-        sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/boost /opt/hostedtoolcache
+        sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/boost /opt/hostedtoolcache /usr/local/aws*
         df -h
 
     - name: Set Swap Space
@@ -36,21 +36,21 @@ jobs:
       with:
         swap-size-gb: 12
 
-    - name: Setup Java 8
+    - name: Setup Java 11
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
-        java-version: '8'
+        java-version: '11'
 
     - name: Install Build Dependencies
       run: |
-        sudo apt update
-        sudo apt install -y bc bison build-essential ccache curl flex g++-multilib \
-          gcc-multilib git gnupg gperf imagemagick lib32ncurses5-dev lib32readline-dev \
+        sudo apt-get update
+        sudo apt-get install -y bc bison build-essential ccache cpio curl flex g++-multilib \
+          gcc-multilib git git-lfs gnupg gperf imagemagick lib32ncurses5-dev lib32readline-dev \
           lib32z1-dev liblz4-tool libncurses5 libncurses5-dev libsdl1.2-dev libssl-dev \
-          libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc \
-          zip zlib1g-dev python2 python2-minimal
-        sudo update-alternatives --install /usr/bin/python python /usr/bin/python2 1 || true
+          libxml2 libxml2-utils lz4 lzop pngcrush python-is-python3 python2 python2-minimal \
+          python3 rsync schedtool squashfs-tools unzip xsltproc zip zlib1g-dev zstd
+        git lfs install
         git config --global user.name "eyge102"
         git config --global user.email "180117909+eyge102@users.noreply.github.com"
 
@@ -60,37 +60,88 @@ jobs:
         curl -s https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
         chmod a+x ~/bin/repo
 
-    - name: Initialize TWRP Omni Manifest
+    - name: Sync OrangeFox R12 (fox_12.1) Sources
       run: |
         export PATH=~/bin:$PATH
-        mkdir -p ~/fox
-        cd ~/fox
-        repo init -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_omni.git -b twrp-9.0 --depth=1
-        repo sync -c -j$(nproc) --force-sync --no-clone-bundle --no-tags
+        git clone --depth=1 https://gitlab.com/OrangeFox/sync.git -b master ~/ofox_sync
+        cd ~/ofox_sync
+        bash ./orangefox_sync.sh --branch 12.1 --path /home/runner/fox
 
-    - name: Install OrangeFox Recovery, Theme and Vendor Sources
+    - name: Patch mkbootimg.py for Samsung Boot Header v0 --dt
       run: |
-        cd ~/fox
-        rm -rf bootable/recovery
-        git clone https://gitlab.com/OrangeFox/bootable/recovery.git -b fox_9.0 bootable/recovery --depth=1
-        rm -rf bootable/recovery/gui/theme
-        git clone https://gitlab.com/OrangeFox/misc/theme.git bootable/recovery/gui/theme --depth=1
-        mkdir -p vendor
-        rm -rf vendor/recovery
-        git clone https://gitlab.com/OrangeFox/vendor/recovery.git -b legacy vendor/recovery --depth=1
+        python3 - <<'PY'
+        path = "/home/runner/fox/system/tools/mkbootimg/mkbootimg.py"
+        src = open(path, "r", encoding="utf-8").read()
 
-    - name: Copy Device Tree from Repository
+        patches = [
+            (
+                "    # flash page size\n    args.output.write(pack('I', args.pagesize))\n    # version of boot image header\n    args.output.write(pack('I', args.header_version))\n",
+                "    # flash page size\n    args.output.write(pack('I', args.pagesize))\n    # version of boot image header (Samsung Boot Header v0 stores dt_size here)\n"
+                "    if args.header_version == 0 and args.dt is not None:\n"
+                "        args.output.write(pack('I', filesize(args.dt)))\n"
+                "    else:\n"
+                "        args.output.write(pack('I', args.header_version))\n",
+            ),
+            (
+                "    update_sha(sha, args.second)\n\n    if args.header_version > 0:",
+                "    update_sha(sha, args.second)\n"
+                "    if args.header_version == 0 and args.dt is not None:\n"
+                "        update_sha(sha, args.dt)\n\n"
+                "    if args.header_version > 0:",
+            ),
+            (
+                "    parser.add_argument('--dtb', type=FileType('rb'), help='path to the dtb')\n",
+                "    parser.add_argument('--dtb', type=FileType('rb'), help='path to the dtb')\n"
+                "    parser.add_argument('--dt', type=FileType('rb'), help='path to the dt image')\n",
+            ),
+            (
+                "    write_padded_file(args.output, args.second, pagesize)\n",
+                "    write_padded_file(args.output, args.second, pagesize)\n"
+                "    if args.header_version == 0 and args.dt is not None:\n"
+                "        write_padded_file(args.output, args.dt, pagesize)\n",
+            ),
+        ]
+
+        for old, new in patches:
+            count = src.count(old)
+            assert count == 1, f"Expected 1 match for patch snippet, got {count}: {old!r}"
+            src = src.replace(old, new, 1)
+
+        open(path, "w", encoding="utf-8").write(src)
+        print("Patched mkbootimg.py successfully for Samsung --dt support.")
+        PY
+
+    - name: Copy Device Tree & Patch Prebuilt Kernel (adbd root fix)
       run: |
-        mkdir -p ~/fox/device/samsung/a7y18lte
-        cp -r $GITHUB_WORKSPACE/* ~/fox/device/samsung/a7y18lte/ || true
-        ls -la ~/fox/device/samsung/a7y18lte/
+        mkdir -p /home/runner/fox/device/samsung/a7y18lte
+        cp -r $GITHUB_WORKSPACE/* /home/runner/fox/device/samsung/a7y18lte/ || true
+        python3 - <<'PY'
+        import re
+        kpath = "/home/runner/fox/device/samsung/a7y18lte/prebuilt/kernel"
+        d = bytearray(open(kpath, "rb").read())
+        for old, new in [
+            (b"\x00/sbin/adbd\x00", b"\x00/sbin/adbX\x00"),
+            (b"\x00/system/bin/adbd\x00", b"\x00/system/bin/adbX\x00"),
+        ]:
+            hits = [m.start() for m in re.finditer(re.escape(old), d)]
+            assert len(hits) == 1, f"Expected 1 hit for {old!r}, got {len(hits)}"
+            assert len(old) == len(new)
+            d[hits[0]:hits[0] + len(new)] = new
+            print(f"Patched {old!r} -> {new!r} at offset {hits[0]}")
+        open(kpath, "wb").write(d)
+        PY
+        ls -la /home/runner/fox/device/samsung/a7y18lte/
 
-    - name: Compile OrangeFox
+    - name: Compile OrangeFox R12
       run: |
         export PATH=~/bin:$PATH
         export ALLOW_MISSING_DEPENDENCIES=true
-        export FOX_USE_TWRP_RECOVERY_IMAGE_BUILDER=1
         export LC_ALL="C"
+        export FOX_BUILD_DEVICE="a7y18lte"
+        export FOX_RECOVERY_INSTALL_PARTITION="/dev/block/platform/13500000.dwmmc0/by-name/RECOVERY"
+        export FOX_RECOVERY_SYSTEM_PARTITION="/dev/block/platform/13500000.dwmmc0/by-name/SYSTEM"
+        export FOX_RECOVERY_VENDOR_PARTITION="/dev/block/platform/13500000.dwmmc0/by-name/VENDOR"
+        export FOX_RECOVERY_BOOT_PARTITION="/dev/block/platform/13500000.dwmmc0/by-name/BOOT"
         export OF_MAINTAINER="eyge102"
         export OF_SCREEN_H=2220
         export OF_STATUS_H=80
@@ -100,6 +151,7 @@ jobs:
         export OF_CLOCK_POS=1
         export OF_ALLOW_DISABLE_NAVBAR=0
         export OF_CHECK_OVERWRITE_ATTEMPTS=1
+        export FOX_USE_TWRP_RECOVERY_IMAGE_BUILDER=1
         export FOX_REPLACE_TOOLBOX_GETPROP=1
         export OF_USE_MAGISKBOOT=1
         export OF_USE_MAGISKBOOT_FOR_ALL_PATCHES=1
@@ -118,59 +170,44 @@ jobs:
         export OF_USE_GREEN_LED=0
         export FOX_DELETE_AROMAFM=1
         export OF_ENABLE_LPTOOLS=1
+        export OF_USE_LZMA_COMPRESSION=1
         export TW_HAS_MTP=true
         export TW_MTP_DEVICE="/dev/usb-ffs/mtp"
         export TW_EXCLUDE_DEFAULT_USB_INIT=true
-        cd ~/fox
+        cd /home/runner/fox
         source build/envsetup.sh
-        lunch omni_a7y18lte-eng
-        make recoveryimage -j$(nproc)
-
-    - name: Patch kernel (disable Samsung SEC_RESTRICT_FORK adbd->uid2000 downgrade)
-      run: |
-        python3 - <<'PY'
-        import glob, re
-        files = glob.glob("/home/runner/fox/out/target/product/a7y18lte/recovery.img")
-        for p in files:
-            d = bytearray(open(p, "rb").read())
-            hits = [m.start() for m in re.finditer(re.escape(b"\x00/sbin/adbd\x00"), d)]
-            print("hits in", p, hits)
-            if len(hits) == 1:
-                d[hits[0] + 1:hits[0] + 12] = b"/sbin/adbX\x00"
-                open(p, "wb").write(d)
-                print("Kernel patched successfully!")
-            else:
-                print("Could not find single /sbin/adbd in kernel (hits:", len(hits), ")")
-        PY
+        lunch twrp_a7y18lte-eng
+        mka adbd recoveryimage -j$(nproc)
 
     - name: Prepare Artifacts & Tar Package
       run: |
         mkdir -p $GITHUB_WORKSPACE/output
-        find /home/runner/fox/out/target/product/a7y18lte -name "OrangeFox-*.zip" -exec cp {} $GITHUB_WORKSPACE/output/ \; || true
-        find /home/runner/fox/out/target/product/a7y18lte -name "recovery.img" -exec cp {} $GITHUB_WORKSPACE/output/ \; || true
+        find /home/runner/fox/out/target/product/a7y18lte -maxdepth 1 \
+          \( -name "OrangeFox-*.zip" -o -name "OrangeFox-*.img" -o -name "OrangeFox-*.tar" -o -name "recovery.img" \) \
+          -exec cp {} $GITHUB_WORKSPACE/output/ \; || true
         cd $GITHUB_WORKSPACE/output
-        if [ -f recovery.img ]; then
-          tar -cvf OrangeFox-a7y18lte-Odin.tar recovery.img
+        if [ -f recovery.img ] && ! ls OrangeFox-*.tar 1>/dev/null 2>&1; then
+          tar -H ustar -cvf OrangeFox-R12.0-a7y18lte-Odin.tar recovery.img
         fi
         ls -lh $GITHUB_WORKSPACE/output/
 
     - name: Upload Recovery Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: OrangeFox-A750F-Recovery
+        name: OrangeFox-R12-A750F-Recovery
         path: output/*
         if-no-files-found: error
 
     - name: Create GitHub Release
-      if: github.event.inputs.CREATE_RELEASE == 'true' || startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
+      if: github.event_name == 'workflow_dispatch' && github.event.inputs.CREATE_RELEASE == 'true'
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: vR9.0-1
-        name: OrangeFox Recovery for Galaxy A7 2018 (vR9.0-1)
+        tag_name: vR12.0-1
+        name: OrangeFox Recovery for Galaxy A7 2018 (vR12.0-1)
         body: |
-          ### OrangeFox Recovery Project for Samsung Galaxy A7 2018 (SM-A750F / a7y18lte)
+          ### OrangeFox Recovery Project (R12.0) for Samsung Galaxy A7 2018 (SM-A750F / a7y18lte)
           - Maintainer: @eyge102
-          - Base: OrangeFox R9.0 (Omni 9.0)
+          - Base: OrangeFox R12.0 (`fox_12.1` / `twrp-12.1`)
           - Built with GitHub Actions CI
           - Features: MTP ConfigFS fix, Flashlight support, Boot splash support, Root ADB shell patch, Magiskboot v24+, and Odin flashable tar package.
         files: output/*

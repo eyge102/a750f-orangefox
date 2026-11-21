@@ -1,15 +1,23 @@
 #
-# Copyright (C) 2023 The Android Open Source Project
+# Copyright (C) 2023-2026 The Android Open Source Project
 # Copyright (C) 2023 SebaUbuntu's TWRP device tree generator
 #
 # SPDX-License-Identifier: Apache-2.0
 #
 
+add_lunch_combo twrp_a7y18lte-user
+add_lunch_combo twrp_a7y18lte-userdebug
+add_lunch_combo twrp_a7y18lte-eng
 add_lunch_combo omni_a7y18lte-user
 add_lunch_combo omni_a7y18lte-userdebug
 add_lunch_combo omni_a7y18lte-eng
 
 # OrangeFox Configuration
+export FOX_BUILD_DEVICE="a7y18lte"
+export FOX_RECOVERY_INSTALL_PARTITION="/dev/block/platform/13500000.dwmmc0/by-name/RECOVERY"
+export FOX_RECOVERY_SYSTEM_PARTITION="/dev/block/platform/13500000.dwmmc0/by-name/SYSTEM"
+export FOX_RECOVERY_VENDOR_PARTITION="/dev/block/platform/13500000.dwmmc0/by-name/VENDOR"
+export FOX_RECOVERY_BOOT_PARTITION="/dev/block/platform/13500000.dwmmc0/by-name/BOOT"
 export OF_MAINTAINER="eyge102"
 export OF_SCREEN_H=2220
 export OF_STATUS_H=80
@@ -38,6 +46,7 @@ export OF_FL_PATH1="/flashlight"
 export OF_USE_GREEN_LED=0
 export FOX_DELETE_AROMAFM=1
 export OF_ENABLE_LPTOOLS=1
+export OF_USE_LZMA_COMPRESSION=1
 export TW_HAS_MTP=true
 export TW_MTP_DEVICE="/dev/usb-ffs/mtp"
 export TW_EXCLUDE_DEFAULT_USB_INIT=true

@@ -73,7 +73,6 @@ subsystem sound
 /sys/devices/virtual/usb_composite/*   enable      0664  root   system
 /sys/devices/system/cpu/cpu*   cpufreq/scaling_max_freq   0664  system system
 /sys/devices/system/cpu/cpu*   cpufreq/scaling_min_freq   0664  system system
-*/
 
 # Mobicore
 /dev/mobicore             0700   system     system
@@ -82,6 +81,5 @@ subsystem sound
 # Secure MEM driver
 /dev/s5p-smem             0660   system     system
 
-/*
 # USB 
 /dev/ttyGS*                 0660   system       system
