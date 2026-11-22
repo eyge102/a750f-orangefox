@@ -177,6 +177,38 @@ jobs:
         export TW_MTP_DEVICE="/dev/usb-ffs/mtp"
         export TW_EXCLUDE_DEFAULT_USB_INIT=true
         cd /home/runner/fox
+        # Fix OrangeFox mtp/ffs/node.cpp sending UINT64 for DATE_MODIFIED/DATE_ADDED/ORIGINAL_RELEASE_DATE (causes libmtp strlen segfault & Windows MTP failure)
+        python3 - <<'PY'
+from pathlib import Path
+p = Path("/home/runner/fox/bootable/recovery/mtp/ffs/node.cpp")
+s = p.read_text()
+if '#include "MtpUtils.h"' not in s:
+    s = s.replace('#include "MtpDebug.h"', '#include "MtpDebug.h"\n#include "MtpUtils.h"', 1)
+if 'char dateStr[64] = {0};' not in s:
+    s = s.replace(
+        '\toff_t file_size = 0;',
+        '\toff_t file_size = 0;\n\tchar dateStr[64] = {0};\n\tmemset(&st, 0, sizeof(st));',
+        1
+    )
+    s = s.replace(
+        '\tif (lstat(path.c_str(), &st) == 0) {',
+        '\tif (lstat(path.c_str(), &st) == 0) {\n\t\tformatDateTime(st.st_mtime, dateStr, sizeof(dateStr));',
+        1
+    )
+s = s.replace(
+    'addProperty(MTP_PROPERTY_DATE_MODIFIED, st.st_mtime, "", MTP_TYPE_UINT64);',
+    'addProperty(MTP_PROPERTY_DATE_MODIFIED, 0, dateStr, MTP_TYPE_STR);'
+)
+s = s.replace(
+    'addProperty(MTP_PROPERTY_DATE_ADDED, st.st_mtime, "", MTP_TYPE_UINT64);',
+    'addProperty(MTP_PROPERTY_DATE_ADDED, 0, dateStr, MTP_TYPE_STR);'
+)
+s = s.replace(
+    'addProperty(MTP_PROPERTY_ORIGINAL_RELEASE_DATE, 2014, "", MTP_TYPE_UINT64);',
+    'addProperty(MTP_PROPERTY_ORIGINAL_RELEASE_DATE, 0, "20140101T000000", MTP_TYPE_STR);'
+)
+p.write_text(s)
+PY
         # orangefox_envsetup returns non-zero when frameworks/base/.../vts/Android.mk is absent in minimal manifest
         set +e
         source build/envsetup.sh
