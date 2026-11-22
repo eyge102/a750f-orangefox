@@ -41,6 +41,7 @@ export OF_FL_PATH1="/flashlight"
 export OF_USE_GREEN_LED=0
 export FOX_DELETE_AROMAFM=1
 export OF_USE_LZMA_COMPRESSION=1
+export OF_UNBIND_SDCARD_F2FS=1
 export FOX_LOCAL_CALLBACK_SCRIPT="/home/runner/fox/device/samsung/a7y18lte/fox_local_callback.sh"
 export TW_HAS_MTP=true
 export TW_MTP_DEVICE="/dev/usb-ffs/mtp"
