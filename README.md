@@ -28,7 +28,7 @@ To build manually:
 2. Navigate to the Actions tab on GitHub.
 3. Run the "Build OrangeFox Recovery" workflow.
 
-Compiled artifacts (recovery image, Odin tar package, and flashable zip) will be available in the workflow run summary and Releases tab.
+Compiled artifacts will be available in the workflow run summary and Releases tab.
 
 ---
 
