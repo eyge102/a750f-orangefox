@@ -50,6 +50,7 @@ do
 done
 
 rm -f "$FOX_RAMDISK/sbin/charger" "$FOX_RAMDISK/system/bin/charger" "$FOX_RAMDISK/res/images/charger"*
+rm -f "$FOX_RAMDISK"/res/images/*_text.png "$FOX_RAMDISK/ramdisk-files.sha256sum" "$FOX_RAMDISK/ramdisk-files.txt"
 
 # Locate strip tool for ARM64 ELF binaries and shared libraries
 STRIP_TOOL=""
@@ -100,9 +101,9 @@ measure_lzma_ramdisk() {
 }
 
 RAMDISK_BYTES="$(measure_lzma_ramdisk)"
-echo "-- [a7y18lte] Compressed ramdisk size (mkbootfs+lzma): $RAMDISK_BYTES bytes (safe budget <= 15000000 bytes; hard cap 15341568 bytes)"
+echo "-- [a7y18lte] Compressed ramdisk size (mkbootfs+lzma): $RAMDISK_BYTES bytes (safe budget <= 13500000 bytes; hard cap 13774848 bytes)"
 
-if [ "${RAMDISK_BYTES:-0}" -gt 15000000 ]; then
+if [ "${RAMDISK_BYTES:-0}" -gt 13500000 ]; then
     UPX_BIN=""
     for cand in \
         "${FOX_VENDOR_PATH:-vendor/recovery}/tools/upx" \
@@ -115,7 +116,7 @@ if [ "${RAMDISK_BYTES:-0}" -gt 15000000 ]; then
     done
 
     if [ -n "$UPX_BIN" ]; then
-        echo "-- [a7y18lte] Ramdisk exceeds 15,000,000 bytes; compressing recovery/adbd with UPX ($UPX_BIN)..."
+        echo "-- [a7y18lte] Ramdisk exceeds 13,500,000 bytes; compressing recovery/adbd with UPX ($UPX_BIN)..."
         for bin in \
             "$FOX_RAMDISK/system/bin/recovery" \
             "$FOX_RAMDISK/system/bin/adbd" \

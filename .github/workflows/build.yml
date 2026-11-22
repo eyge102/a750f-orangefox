@@ -129,7 +129,10 @@ jobs:
             (b"\x00/system/bin/adbd\x00", b"\x00/system/bin/adbX\x00"),
         ]:
             hits = [m.start() for m in re.finditer(re.escape(old), d)]
-            assert len(hits) == 1, f"Expected 1 hit for {old!r}, got {len(hits)}"
+            assert len(hits) in (0, 1), f"Expected 0 or 1 hit for {old!r}, got {len(hits)}"
+            if len(hits) == 0:
+                print(f"Skipping {old!r}: not present (CONFIG_SEC_RESTRICT_ROOTING disabled)")
+                continue
             assert len(old) == len(new)
             d[hits[0]:hits[0] + len(new)] = new
             print(f"Patched {old!r} -> {new!r} at offset {hits[0]}")
