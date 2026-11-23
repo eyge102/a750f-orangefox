@@ -218,6 +218,20 @@ jobs:
         )
         p.write_text(s)
         PY
+        python3 - <<'PY'
+        from pathlib import Path
+        mk = Path("/home/runner/fox/build/make/core/Makefile")
+        s = mk.read_text(encoding="utf-8")
+        old = "\t@echo ----- Making uncompressed recovery ramdisk ------\n\t$(MKBOOTFS) -d $(TARGET_OUT) $(TARGET_RECOVERY_ROOT_OUT) > $@\n"
+        new = (
+            "\t@echo ----- Making uncompressed recovery ramdisk ------\n"
+            "\trm -f $(TARGET_RECOVERY_ROOT_OUT)/res/images/*_text.png $(TARGET_RECOVERY_ROOT_OUT)/ramdisk-files.sha256sum $(TARGET_RECOVERY_ROOT_OUT)/ramdisk-files.txt\n"
+            "\t$(MKBOOTFS) -d $(TARGET_OUT) $(TARGET_RECOVERY_ROOT_OUT) > $@\n"
+        )
+        assert s.count(old) == 1, f"Expected 1 match in core/Makefile, got {s.count(old)}"
+        mk.write_text(s.replace(old, new, 1), encoding="utf-8")
+        print("Patched core/Makefile to strip unused AOSP *_text.png before mkbootfs.")
+        PY
         # orangefox_envsetup returns non-zero when frameworks/base/.../vts/Android.mk is absent in minimal manifest
         set +e
         source build/envsetup.sh
